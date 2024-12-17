@@ -1,0 +1,4 @@
+PyQt6
+pyqt-tools
+PyMySQL
+mysql-connector-python
