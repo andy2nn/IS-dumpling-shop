@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 
 from view.admin_window_view import AdminWindow
+from view.cashier_window import CashierWindow
 
 class MainWindowView(QWidget):
     def __init__(self):
@@ -25,6 +26,7 @@ class MainWindowView(QWidget):
 
         # Кнопка начала смены кассира
         mainButton = QPushButton('Открыть смену кассира')
+        mainButton.clicked.connect(self.navigateToCashierWindow)
         mainButton.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         mainButton.setMinimumWidth(300)
         mainButton.setMaximumWidth(500)
@@ -100,6 +102,11 @@ class MainWindowView(QWidget):
 
         # Устанавливаем layout для виджета
         self.setLayout(layout)
+    
+    def navigateToCashierWindow(self):
+        self.window = CashierWindow()
+        self.window.showFullScreen()
+        self.close()
 
     def navigateToAdminWindow(self):
         self.window = AdminWindow()

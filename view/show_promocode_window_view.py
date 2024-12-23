@@ -1,14 +1,14 @@
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QLabel, QHBoxLayout, QComboBox
 from PyQt6.QtGui import QPixmap
-from services.db_service import DbService
+from services.admin_db_service import AdminDbService
 
 
 class ShowPromocodeWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Промокоды")
-        self.dbService = DbService()
+        self.dbService = AdminDbService()
 
         # Создаем таблицу
         self.table_widget = QTableWidget(self)

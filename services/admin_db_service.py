@@ -2,7 +2,7 @@ import mysql.connector
 from mysql.connector import Error
 
 
-class DbService():
+class AdminDbService():
     def __init__(self):
         try:
             self.connection = mysql.connector.connect(
@@ -222,7 +222,7 @@ class DbService():
 
 # Пример использования класса
 if __name__ == "__main__":
-    db_service = DbService()
+    db_service = AdminDbService()
     
     # Пример данных для обновления
     update_data = {

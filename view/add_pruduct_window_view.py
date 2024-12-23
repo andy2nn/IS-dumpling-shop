@@ -1,4 +1,4 @@
-from services.db_service import DbService
+from services.admin_db_service import AdminDbService
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QSizePolicy, QLabel, QLineEdit, QComboBox, QMessageBox
 from PyQt6.QtCore import Qt
@@ -10,7 +10,7 @@ class AddProductWindow(QWidget):
         self.setWindowTitle('Добавление товара')
         layout = QVBoxLayout()
        
-        self.dbService = DbService()
+        self.dbService = AdminDbService()
 
         # Поле ввода названия товара
         self.productName_label = QLabel('Название товара')

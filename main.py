@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QLabel
 
-from services.db_service import DbService
+from services.admin_db_service import AdminDbService
 
 from view.main_window_view import MainWindowView
 
