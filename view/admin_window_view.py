@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt
 from view.add_pruduct_window_view import AddProductWindow
 from view.add_promocode_window_view import AddPromocodeWindow
 from view.show_products_window_view import ShowProductsWindow
+from view.show_promocode_window_view import ShowPromocodeWindow
 
 
 class AdminWindow(QWidget):
@@ -36,11 +37,12 @@ class AdminWindow(QWidget):
 
         # Кнопка показа промокодов
         showPromocodsButton = QPushButton('Показать промокоды')
+        showPromocodsButton.clicked.connect(self.navigateToShowPromocodes)
         self.setup_button(showPromocodsButton)
 
         # Кнопка выхода из приложения
-        exitButton = QPushButton('Выход из приложения')
-        exitButton.clicked.connect(self.close)
+        exitButton = QPushButton('Вернутся в главное меню')
+        exitButton.clicked.connect(self.navigateToMainWindow)
         self.setup_button(exitButton)
 
         # Добавляем кнопки в горизонтальный layout
@@ -57,6 +59,12 @@ class AdminWindow(QWidget):
         # Устанавливаем layout для виджета
         self.setLayout(layout)
 
+    def navigateToMainWindow(self):
+        from view.main_window_view import MainWindowView
+        self.window = MainWindowView()
+        self.window.showFullScreen()
+        self.close()
+
     def navigateToShowProducts(self):
         self.window = ShowProductsWindow()
         self.window.showFullScreen()
@@ -69,6 +77,11 @@ class AdminWindow(QWidget):
 
     def navigateToAddProductWindow(self):
         self.window = AddProductWindow()
+        self.window.showFullScreen()
+        self.close()
+    
+    def navigateToShowPromocodes(self):
+        self.window = ShowPromocodeWindow()
         self.window.showFullScreen()
         self.close()
 

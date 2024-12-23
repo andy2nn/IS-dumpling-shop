@@ -40,6 +40,27 @@ class DbService():
             if cursor:
                 cursor.close()
         return products
+    
+
+    def load_data_promocods(self):
+        promocods = []
+        cursor = None
+        try:
+            if self.connection.is_connected():
+                cursor = self.connection.cursor()
+                cursor.execute("SELECT Промокод, Скидка FROM промокоды")
+                rows = cursor.fetchall()
+                for row in rows:
+                    promocods.append({
+                        'Промокод': row[0],
+                        'Скидка': row[1],
+                    })
+        except Error as e:
+            print(f"Ошибка при работе с MySQL: {e}")
+        finally:
+            if cursor:
+                cursor.close()
+        return promocods
 
 
 
@@ -84,32 +105,8 @@ class DbService():
             if cursor:
                 cursor.close()
 
-    # def update_database(self, table, data, condition):
-    #     cursor = None
-    #     try:
-    #         if self.connection.is_connected():
-    #             cursor = self.connection.cursor()
 
-    #             set_clause = ', '.join([f"{key} = %s" for key in data.keys()])
-    #             sql = f"UPDATE {table} SET {set_clause} WHERE {condition}"
-    #             values = tuple(data.values())
-    #             print(f"SQL запрос: {sql} с значениями: {values}")
-
-    #             cursor.execute(sql, values)
-    #             self.connection.commit()
-    #             print(f"Обновлено записей: {cursor.rowcount}")
-
-    #             if cursor.rowcount == 0:
-    #                 print("Предупреждение: ни одна запись не была обновлена. Проверьте условие.")
-
-    #     except Error as e:
-    #         print(f"Ошибка при работе с MySQL: {e}")
-
-    #     finally:
-    #         if cursor:
-    #             cursor.close()
-
-    def update_product(self, product_id, new_name, new_price, new_description, new_image):
+    def update_product(self, product_id, new_name, new_price, new_description, new_image, new_category):
         cursor = None
         try:
             if self.connection.is_connected():
@@ -118,12 +115,12 @@ class DbService():
                 # SQL-запрос на обновление
                 sql_update_query = """
                 UPDATE продукты
-                SET Название = %s, Цена = %s, Описание = %s, Изображение = %s
+                SET Название = %s, Цена = %s, Описание = %s, Изображение = %s, id_категории = %s
                 WHERE id_продукта = %s
                 """
                 
                 # Выполнение запроса
-                cursor.execute(sql_update_query, (new_name, new_price, new_description, new_image, product_id))
+                cursor.execute(sql_update_query, (new_name, new_price, new_description, new_image, new_category,product_id))
                 
                 # Подтверждение изменений
                 self.connection.commit()
@@ -135,6 +132,35 @@ class DbService():
         finally:
             if cursor:
                 cursor.close()
+
+
+    def update_promocode(self, promocode, new_promocode, new_discount):
+        cursor = None
+        try:
+            if self.connection.is_connected():
+                cursor = self.connection.cursor()
+
+                # SQL-запрос на обновление
+                sql_update_query = """
+                UPDATE промокоды
+                SET Промокод = %s, Скидка = %s
+                WHERE Промокод = %s
+                """
+                
+                # Выполнение запроса
+                cursor.execute(sql_update_query, (new_promocode, new_discount, promocode))
+                
+                # Подтверждение изменений
+                self.connection.commit()
+
+                print(f"Обновлено записей: {cursor.rowcount}")
+
+        except Error as error:
+            print(f"Ошибка при обновлении записи: {error}")
+        finally:
+            if cursor:
+                cursor.close()
+
     def delete_product(self, product_id):
         cursor = None
         try:
@@ -160,25 +186,33 @@ class DbService():
         finally:
             if cursor:
                 cursor.close()
-    # def delete_from_database(self, table, condition):
-    #     try:
-    #         if self.connection.is_connected():
-    #             cursor = self.connection.cursor()
+    
 
-    #             # Создание строки запроса
-    #             sql = f"DELETE FROM {table} WHERE {condition}"
+    def delete_promocode(self, promocode):
+        cursor = None
+        try:
+            if self.connection.is_connected():
+                cursor = self.connection.cursor()
 
-    #             # Выполнение запроса
-    #             cursor.execute(sql)
-    #             self.connection.commit()
-    #             print(f"Удалено записей: {cursor.rowcount}")
+                # SQL-запрос на удаление
+                sql_delete_query = """
+                DELETE FROM промокоды
+                WHERE Промокод = %s
+                """
+                
+                # Выполнение запроса
+                cursor.execute(sql_delete_query, (promocode,))
+                
+                # Подтверждение изменений
+                self.connection.commit()
 
-    #     except Error as e:
-    #         print(f"Ошибка при работе с MySQL: {e}")
+                print(f"Удалено записей: {cursor.rowcount}")
 
-    #     finally:
-    #         if cursor:
-    #             cursor.close()
+        except Error as error:
+            print(f"Ошибка при удалении записи: {error}")
+        finally:
+            if cursor:
+                cursor.close()
 
     def close_connection(self):
         if self.connection.is_connected():

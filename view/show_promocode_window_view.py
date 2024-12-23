@@ -4,22 +4,22 @@ from PyQt6.QtGui import QPixmap
 from services.db_service import DbService
 
 
-class ShowProductsWindow(QtWidgets.QWidget):
+class ShowPromocodeWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Товары")
+        self.setWindowTitle("Промокоды")
         self.dbService = DbService()
 
         # Создаем таблицу
         self.table_widget = QTableWidget(self)
-        self.table_widget.setColumnCount(6)
-        self.table_widget.setHorizontalHeaderLabels(["Изображение", "Название", "Цена", "Описание", "Действия"])
+        self.table_widget.setColumnCount(3)
+        self.table_widget.setHorizontalHeaderLabels(["Промокод", "Скидка", "Действия"])
 
         # Устанавливаем политику размера для таблицы
         self.table_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # Загружаем данные из базы данных
-        self.products = self.dbService.load_data_products()
+        self.promocods = self.dbService.load_data_promocods()
 
         # Заполняем таблицу данными
         self.populate_table()
@@ -74,62 +74,36 @@ class ShowProductsWindow(QtWidgets.QWidget):
         super().resizeEvent(event)
 
     def populate_table(self):
-        self.table_widget.setRowCount(len(self.products))  # Устанавливаем количество строк
+        self.table_widget.setRowCount(len(self.promocods))  # Устанавливаем количество строк
 
-        for row_index, product in enumerate(self.products):
+        for row_index, promocode in enumerate(self.promocods):
             self.table_widget.setRowHeight(row_index, 60)
-            # Добавляем изображение
-            # image_label = QLabel()
-            # pixmap = QPixmap(product['Изображение'])
-            # image_label.setPixmap(pixmap.scaled(50, 50, QtCore.Qt.AspectRatioMode.KeepAspectRatio))
-            # self.table_widget.setCellWidget(row_index, 0, image_label)
-            self.table_widget.setItem(row_index, 0, QTableWidgetItem(product['Изображение']))
+            self.table_widget.setItem(row_index, 0, QTableWidgetItem(promocode['Промокод']))
 
-            # Добавляем название
-            self.table_widget.setItem(row_index, 1, QTableWidgetItem(product['Название']))
-
-            # Добавляем цену
-            self.table_widget.setItem(row_index, 2, QTableWidgetItem(str(product['Цена'])))
-
-            # Добавляем описание
-            self.table_widget.setItem(row_index, 3, QTableWidgetItem(product['Описание']))
+            self.table_widget.setItem(row_index, 1, QTableWidgetItem(str(promocode['Скидка'])))
 
             # Создаем горизонтальный макет для кнопок
             button_layout = QHBoxLayout()
 
             # Добавляем кнопку редактирования
             edit_button = QPushButton("Сохранить")
-            edit_button.clicked.connect(lambda checked, p=product: self.save_changes(p, row_index))
+            edit_button.clicked.connect(lambda checked, p=promocode: self.save_changes(p, row_index))
             button_layout.addWidget(edit_button)
 
             # Добавляем кнопку удаления
             delete_button = QPushButton("Удалить")
-            delete_button.clicked.connect(lambda checked, p=product: self.delete_product(p))
+            delete_button.clicked.connect(lambda checked, p=promocode: self.delete_product(p))
             button_layout.addWidget(delete_button)
-
-             # Добавляем выпадающий список для категории
-            category_combo = QComboBox()
-
-
-            category_id_map = {}  # Словарь для хранения соответствий id и названий категорий
-            categories = self.dbService.get_categories()  # Загружаем категории из базы данных
-            for category in categories:
-                category_id, category_name = category  # Предполагаем, что get_categories возвращает список кортежей (id, name)
-                category_combo.addItem(category_name)
-                category_id_map[category_id] = category_name  # Сохраняем соответствие
-
-            category_combo.setCurrentText(category_id_map[product['id_категории']])  # Устанавливаем текущую категорию товара
-            self.table_widget.setCellWidget(row_index, 4, category_combo)  # Устанавливаем выпадающий список в ячейку
 
             # Устанавливаем макет кнопок в ячейку таблицы
             widget = QtWidgets.QWidget()
             widget.setLayout(button_layout)
-            self.table_widget.setCellWidget(row_index, 5, widget)
+            self.table_widget.setCellWidget(row_index, 2, widget)
     
-    def delete_product(self, product):
+    def delete_product(self, promocode):
         try:
-            self.dbService.delete_product(product['id_продукта'])
-            self.products = self.dbService.load_data_products()
+            self.dbService.delete_promocode(promocode['Промокод'])
+            self.promocods = self.dbService.load_data_promocods()
             self.populate_table()
         except Exception as e:
             print(f"Ошибка при обновлении базы данных: {e}")
@@ -145,37 +119,20 @@ class ShowProductsWindow(QtWidgets.QWidget):
         self.close()
 
       
-    def save_changes(self, product, row):
+    def save_changes(self, promocode, row):
         # Получаем новые значения из ячеек таблицы
-        new_name = self.table_widget.item(row, 1).text()
-        new_price = self.table_widget.item(row, 2).text()
-        new_description = self.table_widget.item(row, 3).text()
-        new_image = self.table_widget.item(row, 0).text()
-        combo_box = self.table_widget.cellWidget(row, 4)
-        currentCategory = combo_box.currentText()
-        category_id_map = {}  # Словарь для хранения соответствий id и названий категорий
-        categories = self.dbService.get_categories()  # Загружаем категории из базы данных
-        for category in categories:
-            category_id, category_name = category  # Предполагаем, что get_categories возвращает список кортежей (id, name)
-            category_id_map[category_name] = category_id  # Сохраняем соответствие
-        new_category = category_id_map[currentCategory]
+
+        new_promocode = self.table_widget.item(row, 0).text()
+        new_discount = self.table_widget.item(row, 1).text()
 
         try: 
-            new_category = int(new_category)
+            new_discount = int(new_discount)
         except ValueError:
-            print("Ошибка при преобразовании id категории в int")
-
-        try:
-            new_price = int(new_price)  # Преобразуем цену в float
-        except ValueError:
-            print("Ошибка: Цена должна быть числом.")
-            return
-
-
+            print("Скидка должна быть числом (%)")
         
         try:
-            self.dbService.update_product(product['id_продукта'], new_name, new_price, new_description, new_image, new_category)
-            self.products = self.dbService.load_data_products()
+            self.dbService.update_promocode(promocode['Промокод'], new_promocode, new_discount)
+            self.promocods = self.dbService.load_data_promocods()
             self.populate_table()
         except Exception as e:
             print(f"Ошибка при обновлении базы данных: {e}")
