@@ -58,3 +58,21 @@ class CashierDbService():
             if cursor:
                 cursor.close()
         return categories
+    
+    def get_promo(self, promocode):
+        try:
+            if self.connection.is_connected():
+                cursor = self.connection.cursor()
+                cursor.execute("SELECT Скидка FROM промокоды WHERE Промокод = %s", (promocode,))
+                row = cursor.fetchone()
+                if row:
+                    return row[0]
+                else:
+                    return None
+        except Error as e:
+            print(f"Ошибка при работе с MySQL: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+    

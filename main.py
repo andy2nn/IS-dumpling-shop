@@ -1,8 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QLabel
-
-from services.admin_db_service import AdminDbService
-
+from PyQt6.QtWidgets import QApplication
 from view.main_window_view import MainWindowView
 
 if __name__ == "__main__":

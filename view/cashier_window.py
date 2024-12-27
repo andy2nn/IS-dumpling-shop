@@ -1,10 +1,17 @@
 import sys
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, QTableWidget, 
+    QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, QTableWidget, 
     QTableWidgetItem, QMessageBox, QHeaderView
 )
 from PyQt6.QtCore import Qt
 from services.cashier_db_service import CashierDbService
+from view.close_smena import CloseSmena
+
+from reportlab.pdfgen import canvas
+import os
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 
 
@@ -14,6 +21,8 @@ class CashierWindow(QWidget):
         self.init_ui()
         self.dbService = CashierDbService()
         self.load_items()
+        self.purchase = 0
+        self.revenue = 0
         # self.init_db()
 
     def init_ui(self):
@@ -37,6 +46,7 @@ class CashierWindow(QWidget):
         # Кнопка для добавления товара
         self.add_item_button = QPushButton("Добавить выбранный товар")
         self.add_item_button.clicked.connect(self.add_selected_item)
+        self.setup_button(self.add_item_button)
         main_layout.addWidget(self.add_item_button)
 
         # Выбранные товары
@@ -54,6 +64,7 @@ class CashierWindow(QWidget):
         # Кнопка для удаления товара
         self.remove_item_button = QPushButton("Удалить выбранный товар")
         self.remove_item_button.clicked.connect(self.remove_selected_item)
+        self.setup_button(self.remove_item_button)
         main_layout.addWidget(self.remove_item_button)
 
         # Общая стоимость
@@ -65,6 +76,7 @@ class CashierWindow(QWidget):
         self.promo_input = QLineEdit()
         self.promo_input.setPlaceholderText("Введите промокод")
         self.apply_promo_button = QPushButton("Применить промокод")
+        self.setup_button(self.apply_promo_button)
         self.apply_promo_button.clicked.connect(self.apply_promo)
         promo_layout.addWidget(self.promo_input)
         promo_layout.addWidget(self.apply_promo_button)
@@ -73,8 +85,10 @@ class CashierWindow(QWidget):
         # Управление
         control_layout = QHBoxLayout()
         self.buy_button = QPushButton("Произвести покупку")
+        self.setup_button(self.buy_button)
         self.buy_button.clicked.connect(self.make_purchase)
         self.close_button = QPushButton("Закрыть смену")
+        self.setup_button(self.close_button)
         self.close_button.clicked.connect(self.close_shift)
         control_layout.addWidget(self.buy_button)
         control_layout.addWidget(self.close_button)
@@ -148,10 +162,21 @@ class CashierWindow(QWidget):
 
     def apply_promo(self):
         promo_code = self.promo_input.text().strip()
+
         if promo_code:
-            QMessageBox.information(self, "Промокод", f"Промокод {promo_code} применен!")
+            try:
+                promo = self.dbService.get_promo(promo_code)
+                if (promo != None):
+                    self.total_cost *= (1 - promo / 100)
+                    self.update_total_cost_label()
+                    QMessageBox.information(self, "Промокод", f"Промокод {promo_code} применен!")
+                else:
+                    QMessageBox.warning(self, "Промокод", "Введите корректный промокод.")
+            except Exception as e:
+                QMessageBox.warning(self, "Промокод", f"Ошибка: {str(e)}")
         else:
             QMessageBox.warning(self, "Промокод", "Введите корректный промокод.")
+
 
     def make_purchase(self):
         row_count = self.selected_items_table.rowCount()
@@ -163,13 +188,66 @@ class CashierWindow(QWidget):
         for row in range(row_count):
             item_name = self.selected_items_table.item(row, 1).text()
             items.append(item_name)
-
-        items_text = ", ".join(items)
-        QMessageBox.information(self, "Покупка", f"Вы купили: {items_text}")
+        
+        self.purchase += 1
+        self.revenue += self.total_cost
+        # items_text = ", ".join(items)
+        self.create_pdf_receipt(items, self.total_cost)
         self.selected_items_table.setRowCount(0)
         self.total_cost = 0
         self.update_total_cost_label()
 
+    def create_pdf_receipt(self, items_text, total_cost):
+        pdf_directory = os.path.join(os.getcwd(), "purchase")
+        
+        # Создаем папку 'purchase', если она не существует
+        if not os.path.exists(pdf_directory):
+            os.makedirs(pdf_directory)
+
+        pdf_path = os.path.join(pdf_directory, "receipt.pdf")
+        pdfmetrics.registerFont(TTFont('DejaVuSans', 'assets\DejaVuSans.ttf'))
+        # Создание PDF
+        c = canvas.Canvas(pdf_path, pagesize=letter)
+        width, height = letter
+
+        c.setFont('DejaVuSans', 18)
+
+        # Добавление текста в PDF
+        c.drawString(100, height - 100, "Чек покупки")
+        c.drawString(100, height - 120, f"Вы купили: ")
+        y_position = height - 140
+        for i in range(len(items_text)):
+            c.drawString(100, y_position, items_text[i])
+            y_position -= 20
+        c.drawString(100, y_position - 20, f"Общая стоимость: {total_cost} руб.")
+        c.drawString(100, y_position - 40, f"СПАСИБО ЗА ПОКУПКУ !!!")
+        # Сохранение PDF
+        c.save()
+
+        # Информирование пользователя о создании чека
+        QMessageBox.information(self, "Чек", f"Чек сохранен по пути: {pdf_path}")
+
     def close_shift(self):
+        self.window = CloseSmena()
+        self.window.update_summary(self.purchase , self.revenue)
+        self.window.showFullScreen()
         QMessageBox.information(self, "Смена", "Смена закрыта!")
         self.close()
+    def setup_button(self, button):
+        button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        button.setMinimumWidth(300)
+        button.setMaximumWidth(500)
+        button.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #4CAF50; 
+                color: white; 
+                border: none; 
+                padding: 10px; 
+                border-radius: 5px; 
+            }
+            QPushButton:hover {
+                background-color: #45a049; 
+            }
+            """
+        )
